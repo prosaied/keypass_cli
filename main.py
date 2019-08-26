@@ -1,10 +1,19 @@
 import os
 from Crypto.Cipher import AES
 import base64
+import click
 import sys
 import getpass
 
+@click.group()
 
+def keypass():
+    """Simple command-line tool for managing your password securely."""
+    pass
+
+@keypass.command()
+@click.option('-k', '--key_name', required=True)
+@click.option('-p', '--key_pass', '--password', required=True, prompt=True, hide_input=True, confirmation_prompt=True)
 def create_key(key_name, key_pass):
     safe_password = encode_password(key_pass)
     kpath = os.environ['HOME'] + "/" + key_name
@@ -14,14 +23,19 @@ def create_key(key_name, key_pass):
     print("Your key was created.")
 
 
+@keypass.command()
+@click.option('-k', '--key_name', required=True)
 def show_key(key_name):
-    secret = read_secret()
-    kpath = os.environ['HOME'] + "/" + key_name
-    f = open(kpath, "r")
-    encoded = f.read()
-    decoded = decode_password(encoded)
-    print(decoded.decode("utf-8"))
-    f.close()
+    if key_exists(key_name) == 0:
+        print("Key no exist.")
+    else:
+        secret = read_secret()
+        kpath = os.environ['HOME'] + "/" + key_name
+        f = open(kpath, "r")
+        encoded = f.read()
+        decoded = decode_password(encoded)
+        print(decoded.decode("utf-8"))
+        f.close()
 
 
 def key_exists(key_name):
@@ -42,16 +56,6 @@ def secret_exist():
     except FileNotFoundError:
         return 0
     return 1
-
-
-def create_secret():
-    secret = os.urandom(16)
-    spath = os.environ['HOME'] + "/secret_file"
-    f = open(spath, "wb+")
-    f.write(secret)
-    f.close()
-    print("Your Secret file is now created in your home directory, Keep It Safe !!!!")
-
 
 def read_secret():
     spath = os.environ['HOME'] + "/secret_file"
@@ -75,23 +79,16 @@ def decode_password(encoded):
     decoded = cipher.decrypt(base64.b64decode(encoded))
     return decoded.strip()
 
-
-# if sys.argv[1] == "--create-secret":
-#     create_secret()
-#
-# if sys.argv[1] == "--create-key":
-#     if secret_exist() == 0:
-#         print("You have not already created your secret file!, run --create-secret")
-#         sys.exit()
-#     key_name = input('Enter your key: ')
-#     if key_exists(key_name) == 1:
-#         print("You already created a key with this name !")
-#         sys.exit()
-#     key_pass = getpass.getpass('Enter your password: ')
-#     create_key(key_name, key_pass)
-#
-# if sys.argv[1] == "--show-key":
-#     key_name = input('Enter your key: ')
-#     show_key(key_name)
+@keypass.command()
+def create_secret():
+    secret = os.urandom(16)
+    spath = os.environ['HOME'] + "/secret_file"
+    f = open(spath, "wb+")
+    f.write(secret)
+    f.close()
+    print("Your Secret file is now created in your home directory, Keep It Safe !!!!")
 
 
+
+if '__main__':
+    keypass()
